@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Workspace Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    .auth-card h1 { font-size: 24px; margin-bottom: 8px; }
+    .auth-card p { color: #666; margin-bottom: 28px; font-size: 14px; }
+
+    .auth-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+    .auth-tab {
+      flex: 1; padding: 8px; border: none; background: #f0f2f5;
+      border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+    }
+    .auth-tab.active { background: #667eea; color: white; }
+
+    input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0;
+      border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #667eea; }
+
+    button.primary {
+      width: 100%; padding: 12px; background: #667eea; color: white;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    button.primary:hover { background: #5a6fd6; }
+    button.primary:disabled { background: #aaa; cursor: not-allowed; }
+
+    .error { color: #e53e3e; font-size: 13px; margin-top: 8px; }
+
+    /* ── MAIN APP ── */
+    #app-screen { display: none; flex-direction: column; height: 100vh; }
+
+    /* Top bar */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: white;
+      border-bottom: 1px solid #e8e8e8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .topbar h2 { font-size: 18px; font-weight: 700; color: #667eea; }
+    .topbar .right { display: flex; align-items: center; gap: 12px; }
+    .user-pill {
+      background: #f0f2f5; padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; color: #555;
+    }
+    .btn-sm {
+      padding: 6px 14px; border: 1.5px solid #ddd; background: white;
+      border-radius: 8px; cursor: pointer; font-size: 13px;
+      transition: all 0.2s;
+    }
+    .btn-sm:hover { border-color: #667eea; color: #667eea; }
+
+    /* Layout */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px; background: white; border-right: 1px solid #e8e8e8;
+      display: flex; flex-direction: column; padding: 16px;
+      overflow-y: auto;
+    }
+    .sidebar h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: #999; margin-bottom: 10px; margin-top: 16px; }
+    .sidebar h3:first-child { margin-top: 0; }
+
+    .workspace-item {
+      padding: 9px 12px; border-radius: 8px; cursor: pointer;
+      font-size: 14px; transition: background 0.15s; margin-bottom: 2px;
+    }
+    .workspace-item:hover { background: #f0f2f5; }
+    .workspace-item.active { background: #ede9ff; color: #667eea; font-weight: 600; }
+
+    .new-workspace {
+      display: flex; gap: 6px; margin-top: 8px;
+    }
+    .new-workspace input { margin-bottom: 0; flex: 1; padding: 8px 10px; font-size: 13px; }
+    .new-workspace button {
+      padding: 8px 12px; background: #667eea; color: white; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap;
+    }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; padding: 12px 20px 0; background: white;
+      border-bottom: 1px solid #e8e8e8; }
+    .tab {
+      padding: 10px 18px; cursor: pointer; font-size: 14px; font-weight: 500;
+      border-bottom: 2px solid transparent; color: #666; transition: all 0.2s;
+    }
+    .tab.active { color: #667eea; border-bottom-color: #667eea; }
+
+    /* Panels */
+    .panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* ── CHAT ── */
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .msg {
+      max-width: 72%; padding: 12px 16px; border-radius: 12px; font-size: 14px;
+      line-height: 1.6;
+    }
+    .msg.user {
+      align-self: flex-end; background: #667eea; color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.assistant {
+      align-self: flex-start; background: white; border: 1px solid #e8e8e8;
+      border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .msg .citations {
+      margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;
+      font-size: 12px; color: #888;
+    }
+    .msg .task-badge {
+      margin-top: 8px; background: #e9f5e9; color: #2d7a2d;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-block;
+    }
+
+    .chat-input-area {
+      padding: 16px 20px; background: white; border-top: 1px solid #e8e8e8;
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    .chat-input-area textarea {
+      flex: 1; resize: none; border: 1.5px solid #e0e0e0; border-radius: 10px;
+      padding: 10px 14px; font-size: 14px; font-family: inherit;
+      max-height: 120px; outline: none; transition: border-color 0.2s;
+      margin-bottom: 0;
+    }
+    .chat-input-area textarea:focus { border-color: #667eea; }
+    .chat-input-area button {
+      padding: 10px 20px; background: #667eea; color: white; border: none;
+      border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .chat-input-area button:disabled { background: #aaa; cursor: not-allowed; }
+
+    .no-workspace-msg {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #999; font-size: 15px;
+    }
+
+    /* ── UPLOAD ── */
+    .upload-panel-inner {
+      padding: 32px; max-width: 600px;
+    }
+    .upload-panel-inner h3 { font-size: 18px; margin-bottom: 8px; }
+    .upload-panel-inner p { color: #666; font-size: 14px; margin-bottom: 20px; }
+
+    .drop-zone {
+      border: 2px dashed #ccc; border-radius: 12px; padding: 40px;
+      text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: #667eea; background: #f5f3ff; }
+    .drop-zone p { color: #888; font-size: 14px; margin-top: 8px; }
+    .drop-zone .icon { font-size: 36px; }
+
+    #file-input { display: none; }
+    .upload-status { margin-top: 12px; font-size: 14px; }
+    .upload-status.success { color: #2d7a2d; }
+    .upload-status.error { color: #e53e3e; }
+
+    .doc-list { margin-top: 24px; }
+    .doc-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      background: white; border: 1px solid #e8e8e8; border-radius: 8px;
+      margin-bottom: 8px; font-size: 14px;
+    }
+    .doc-item .doc-icon { font-size: 20px; }
+    .doc-item .doc-name { flex: 1; font-weight: 500; }
+    .doc-item .doc-date { color: #999; font-size: 12px; }
+
+    /* ── TASKS ── */
+    .tasks-panel-inner { padding: 32px; max-width: 600px; }
+    .tasks-panel-inner h3 { font-size: 18px; margin-bottom: 20px; }
+    .task-item {
+      background: white; border: 1px solid #e8e8e8; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 10px;
+    }
+    .task-item .task-title { font-weight: 600; font-size: 14px; }
+    .task-item .task-desc { color: #666; font-size: 13px; margin-top: 4px; }
+    .task-item .task-meta { color: #aaa; font-size: 12px; margin-top: 8px; }
+    .status-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; margin-left: 8px;
+    }
+    .status-badge.open { background: #fff3cd; color: #856404; }
+
+    .empty-state { color: #aaa; font-size: 14px; padding: 20px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>🗂️ Workspace Assistant</h1>
+    <p>Upload documents, ask questions, save tasks.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <input type="email" id="auth-email" placeholder="Email address" />
+    <input type="password" id="auth-password" placeholder="Password" />
+    <button class="primary" id="auth-btn" onclick="handleAuth()">Log In</button>
+    <div class="error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app-screen">
+  <div class="topbar">
+    <h2>🗂️ Workspace Assistant</h2>
+    <div class="right">
+      <div class="user-pill" id="user-email-display">user@email.com</div>
+      <button class="btn-sm" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>Workspaces</h3>
+      <div id="workspace-list"></div>
+      <h3>New Workspace</h3>
+      <div class="new-workspace">
+        <input type="text" id="new-ws-name" placeholder="Name..." />
+        <button onclick="createWorkspace()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Right side -->
+    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('chat')">💬 Chat</div>
+        <div class="tab" onclick="switchTab('upload')">📁 Documents</div>
+        <div class="tab" onclick="switchTab('tasks')">✅ Tasks</div>
+      </div>
+
+      <!-- CHAT PANEL -->
+      <div class="panel active" id="panel-chat">
+        <div id="no-ws-msg" class="no-workspace-msg">← Select a workspace to start chatting</div>
+        <div id="chat-area" style="display:none; flex:1; overflow:hidden; flex-direction:column; display:none;">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-area">
+            <textarea id="chat-input" rows="1" placeholder="Ask a question about your documents..."
+              onkeydown="handleChatKey(event)"></textarea>
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD PANEL -->
+      <div class="panel" id="panel-upload" style="overflow-y:auto;">
+        <div class="upload-panel-inner">
+          <h3>Upload Documents</h3>
+          <p>Upload .txt or .md files. They'll be chunked and indexed for chat.</p>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+            ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+            <div class="icon">📄</div>
+            <p>Click to browse or drag & drop a file here</p>
+          </div>
+          <input type="file" id="file-input" accept=".txt,.md,.csv" onchange="uploadFile(this.files[0])" />
+          <div class="upload-status" id="upload-status"></div>
+          <div class="doc-list" id="doc-list"></div>
+        </div>
+      </div>
+
+      <!-- TASKS PANEL -->
+      <div class="panel" id="panel-tasks" style="overflow-y:auto;">
+        <div class="tasks-panel-inner">
+          <h3>Saved Tasks</h3>
+          <div id="tasks-list"><div class="empty-state">Select a workspace to see tasks.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──
+  // Change this to your deployed backend URL after deploying to Fly.io
+  // For local dev, use http://127.0.0.1:8000
+  const API = "http://127.0.0.1:8000";
+
+  // ── STATE ──
+  let token = localStorage.getItem("token") || null;
+  let userEmail = localStorage.getItem("email") || null;
+  let activeWorkspaceId = null;
+  let chatHistory = [];
+  let authMode = "login";
+
+  // ── INIT ──
+  if (token) showApp();
+
+  // ── AUTH ──
+  function switchAuthTab(mode) {
+    authMode = mode;
+    document.querySelectorAll(".auth-tab").forEach((t, i) => {
+      t.classList.toggle("active", (mode === "login" && i === 0) || (mode === "signup" && i === 1));
+    });
+    document.getElementById("auth-btn").textContent = mode === "login" ? "Log In" : "Sign Up";
+    document.getElementById("auth-error").textContent = "";
+  }
+
+  async function handleAuth() {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const errEl = document.getElementById("auth-error");
+    errEl.textContent = "";
+    if (!email || !password) { errEl.textContent = "Please fill in both fields."; return; }
+
+    const btn = document.getElementById("auth-btn");
+    btn.disabled = true; btn.textContent = "Please wait...";
+
+    try {
+      const endpoint = authMode === "login" ? "/auth/login" : "/auth/signup";
+      const res = await fetch(API + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Something went wrong.");
+      token = data.token;
+      userEmail = data.email;
+      localStorage.setItem("token", token);
+      localStorage.setItem("email", userEmail);
+      showApp();
+    } catch (e) {
+      errEl.textContent = e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = authMode === "login" ? "Log In" : "Sign Up";
+    }
+  }
+
+  function logout() {
+    token = null; userEmail = null; activeWorkspaceId = null; chatHistory = [];
+    localStorage.removeItem("token"); localStorage.removeItem("email");
+    document.getElementById("app-screen").style.display = "none";
+    document.getElementById("auth-screen").style.display = "flex";
+  }
+
+  function showApp() {
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "flex";
+    document.getElementById("user-email-display").textContent = userEmail;
+    loadWorkspaces();
+  }
+
+  // ── WORKSPACES ──
+  async function loadWorkspaces() {
+    const res = await apiFetch("/workspaces");
+    const workspaces = await res.json();
+    const list = document.getElementById("workspace-list");
+    list.innerHTML = "";
+    workspaces.forEach(ws => {
+      const el = document.createElement("div");
+      el.className = "workspace-item" + (ws.id === activeWorkspaceId ? " active" : "");
+      el.textContent = ws.name;
+      el.onclick = () => selectWorkspace(ws.id, ws.name);
+      list.appendChild(el);
+    });
+    // Auto-select first workspace
+    if (!activeWorkspaceId && workspaces.length > 0) {
+      selectWorkspace(workspaces[0].id, workspaces[0].name);
+    }
+  }
+
+  function selectWorkspace(id, name) {
+    activeWorkspaceId = id;
+    chatHistory = [];
+    document.getElementById("chat-messages").innerHTML = "";
+    document.querySelectorAll(".workspace-item").forEach(el => {
+      el.classList.toggle("active", el.textContent === name);
+    });
+    document.getElementById("no-ws-msg").style.display = "none";
+    const chatArea = document.getElementById("chat-area");
+    chatArea.style.display = "flex";
+    chatArea.style.flexDirection = "column";
+    chatArea.style.flex = "1";
+    chatArea.style.overflow = "hidden";
+    loadDocs();
+    loadTasks();
+  }
+
+  async function createWorkspace() {
+    const name = document.getElementById("new-ws-name").value.trim();
+    if (!name) return;
+    await apiFetch("/workspaces", "POST", { name });
+    document.getElementById("new-ws-name").value = "";
+    loadWorkspaces();
+  }
+
+  // ── TABS ──
+  function switchTab(tab) {
+    document.querySelectorAll(".tab").forEach((t, i) => {
+      t.classList.toggle("active", ["chat","upload","tasks"][i] === tab);
+    });
+    document.querySelectorAll(".panel").forEach((p, i) => {
+      p.classList.toggle("active", ["panel-chat","panel-upload","panel-tasks"][i] === "panel-"+tab);
+    });
+    if (tab === "upload") loadDocs();
+    if (tab === "tasks") loadTasks();
+  }
+
+  // ── CHAT ──
+  function handleChatKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  async function sendMessage() {
+    if (!activeWorkspaceId) return;
+    const input = document.getElementById("chat-input");
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = "";
+    document.getElementById("send-btn").disabled = true;
+
+    appendMessage("user", message);
+    chatHistory.push({ role: "user", content: message });
+
+    const typing = appendMessage("assistant", "Thinking...");
+
+    try {
+      const res = await apiFetch("/chat", "POST", {
+        workspace_id: activeWorkspaceId,
+        message,
+        history: chatHistory.slice(-6)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Error from server.");
+
+      typing.remove();
+      const msgEl = appendMessage("assistant", data.answer);
+
+      if (data.citations && data.citations.length > 0) {
+        const citeEl = document.createElement("div");
+        citeEl.className = "citations";
+        citeEl.textContent = "📎 " + data.citations.join(", ");
+        msgEl.appendChild(citeEl);
+      }
+
+      if (data.task_saved) {
+        const badge = document.createElement("div");
+        badge.className = "task-badge";
+        badge.textContent = `✅ Task saved: "${data.task_saved.title}"`;
+        msgEl.appendChild(badge);
+        loadTasks();
+      }
+
+      chatHistory.push({ role: "assistant", content: data.answer });
+    } catch (e) {
+      typing.remove();
+      appendMessage("assistant", "⚠️ Error: " + e.message);
+    }
+
+    document.getElementById("send-btn").disabled = false;
+    input.focus();
+  }
+
+  function appendMessage(role, text) {
+    const container = document.getElementById("chat-messages");
+    const el = document.createElement("div");
+    el.className = "msg " + role;
+    el.textContent = text;
+    container.appendChild(el);
+    container.scrollTop = container.scrollHeight;
+    return el;
+  }
+
+  // ── UPLOAD ──
+  function onDragOver(e) { e.preventDefault(); document.getElementById("drop-zone").classList.add("dragover"); }
+  function onDragLeave() { document.getElementById("drop-zone").classList.remove("dragover"); }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById("drop-zone").classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  }
+
+  async function uploadFile(file) {
+    if (!activeWorkspaceId) { alert("Select a workspace first."); return; }
+    const status = document.getElementById("upload-status");
+    status.className = "upload-status";
+    status.textContent = `Uploading "${file.name}"...`;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API}/workspaces/${activeWorkspaceId}/upload`, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      status.className = "upload-status success";
+      status.textContent = "✅ " + data.message;
+      loadDocs();
+    } catch (e) {
+      status.className = "upload-status error";
+      status.textContent = "❌ " + e.message;
+    }
+  }
+
+  async function loadDocs() {
+    if (!activeWorkspaceId) return;
+    const res = await apiFetch(`/workspaces/${activeWorkspaceId}/documents`);
+    const docs = await res.json();
+    const list = document.getElementById("doc-list");
+    if (!docs.length) { list.innerHTML = '<div class="empty-state">No documents uploaded yet.</div>'; return; }
+    list.innerHTML = docs.map(d => `
+      <div class="doc-item">
+        <span class="doc-icon">📄</span>
+        <span class="doc-name">${d.filename}</span>
+        <span class="doc-date">${new Date(d.uploaded_at).toLocaleDateString()}</span>
+      </div>
+    `).join("");
+  }
+
+  // ── TASKS ──
+  async function loadTasks() {
+    if (!activeWorkspaceId) return;
+    const res = await apiFetch(`/workspaces/${activeWorkspaceId}/tasks`);
+    const tasks = await res.json();
+    const list = document.getElementById("tasks-list");
+    if (!tasks.length) { list.innerHTML = '<div class="empty-state">No tasks yet. Mention a task in chat and the AI will save it automatically.</div>'; return; }
+    list.innerHTML = tasks.map(t => `
+      <div class="task-item">
+        <div class="task-title">${t.title} <span class="status-badge open">${t.status}</span></div>
+        ${t.description ? `<div class="task-desc">${t.description}</div>` : ""}
+        <div class="task-meta">${new Date(t.created_at).toLocaleString()}</div>
+      </div>
+    `).join("");
+  }
+
+  // ── API HELPER ──
+  async function apiFetch(path, method = "GET", body = null) {
+    const opts = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + path, opts);
+    if (res.status === 401) { logout(); throw new Error("Session expired."); }
+    return res;
+  }
+</script>
+</body>
+</html>
