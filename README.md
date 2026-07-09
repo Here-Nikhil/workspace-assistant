@@ -1,117 +1,115 @@
-# Multi-Workspace Document Assistant
+# Workspace Document Assistant
 
 A RAG-powered document assistant with tool calling, real auth, and Discord notifications.
 
-## Tech Stack
-- **Backend**: FastAPI (Python)
-- **Database**: Neon (Postgres + pgvector)
-- **LLM**: Groq (llama3-70b)
-- **Embeddings**: sentence-transformers (all-MiniLM-L6-v2, 384 dims)
-- **Frontend**: Plain HTML/CSS/JS
-- **Backend hosting**: Fly.io
-- **Frontend hosting**: Vercel
+## What the App Does
+- Sign up / log in with real JWT auth
+- Create multiple workspaces and switch between them
+- Upload documents (.txt, .md, .csv) — they get chunked, embedded, and stored
+- Chat with an AI that answers only from your workspace's documents, with citations
+- AI says "I don't know" when documents don't contain the answer
+- AI can save tasks (via tool calling) and summarize all documents
+- Every tool call is logged in the Tool Call Log dashboard tab
+- Discord notification sent when a task is saved
 
-## Features
-- Real JWT auth (signup / login)
-- Multiple workspaces per user, strict isolation at query level
-- Document upload → chunking → embedding → pgvector storage
-- RAG chat with citations on every answer
-- Honest "I don't know" when docs don't contain the answer
-- Tool calling: AI detects tasks in chat → saves to DB → notifies Discord
-- Prompt injection resistance
+## How to Run Locally
 
----
+### 1. Clone the repo
+```bash
+git clone https://github.com/Here-Nikhil/workspace-assistant.git
+cd workspace-assistant
+```
 
-## Local Development
-
-### 1. Backend setup
-
+### 2. Set up the backend
 ```bash
 cd backend
 pip install -r requirements.txt
-```
-
-Copy `.env.example` to `.env` and fill in your values:
-```bash
 cp .env.example .env
+# Fill in your real values in .env
 ```
 
-Run the schema on Neon (paste `schema.sql` into the Neon SQL editor).
+Run the schema on your Neon database (paste `schema.sql` into the Neon SQL editor).
+
+Also run this to add the tool call log table:
+```sql
+CREATE TABLE tool_call_logs (
+    id           SERIAL PRIMARY KEY,
+    workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    tool_name    TEXT NOT NULL,
+    arguments    TEXT,
+    result       TEXT,
+    success      BOOLEAN NOT NULL DEFAULT true,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
 
 Start the backend:
 ```bash
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
-Backend runs at `http://localhost:8000`
-
-### 2. Frontend setup
-
-Open `frontend/index.html` directly in your browser.
-The `API` variable at the top of the script is set to `http://localhost:8000` by default.
-
----
-
-## Deployment
-
-### Backend → Fly.io
-
-```bash
-# Install flyctl if you haven't: https://fly.io/docs/hands-on/install-flyctl/
-cd backend
-fly auth login
-fly launch   # follow prompts, use existing fly.toml
-fly secrets set DATABASE_URL="..." GROQ_API_KEY="..." DISCORD_WEBHOOK_URL="..." JWT_SECRET="..."
-fly deploy
-```
-
-### Frontend → Vercel
-
-1. Push this repo to GitHub
-2. Go to vercel.com → New Project → import your repo
-3. Set **Root Directory** to `frontend`
-4. Deploy
-5. After deploy, update the `API` variable in `frontend/index.html` to your Fly.io backend URL, then redeploy
-
----
+### 3. Run the frontend
+Open `frontend/index.html` in your browser. Change the `API` variable at the top of the script from the production URL to `http://127.0.0.1:8000`.
 
 ## Environment Variables
+
+See `.env.example` for all required variables:
 
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | Neon Postgres connection string |
 | `GROQ_API_KEY` | From console.groq.com |
 | `DISCORD_WEBHOOK_URL` | From your Discord server settings |
-| `JWT_SECRET` | Any long random string (keep secret) |
+| `JWT_SECRET` | Any long random string |
 
----
+## Deployment
+- **Backend:** Hugging Face Spaces (Docker, CPU Basic free tier) — chosen because sentence-transformers needs ~400MB RAM, which exceeds Render's free tier limit
+- **Frontend:** Vercel (static HTML, auto-deploys from GitHub)
+
+## How to Test the Live App
+
+**Live URL:** https://workspace-assist.vercel.app
+
+**Throwaway account:**
+- Email: `test@demo.com`
+- Password: `Demo1234`
+
+### Two preloaded workspaces:
+- **My Workspace** — contains TechCorp company information
+- **Project Alpha** — contains Project Alpha confidential details
+
+### Good questions to ask:
+
+In **My Workspace:**
+- "Who founded TechCorp and when?"
+- "What is TechCorp's revenue?"
+- "Please save a task to review the financials next week"
+- "Can you summarize all documents in this workspace?"
+
+In **Project Alpha:**
+- "Who is the project lead and what is the deadline?"
+- "What tech stack is being used?"
+
+### Testing isolation (most important):
+1. Switch to **Project Alpha**
+2. Ask: "Who founded TechCorp and what is their revenue?"
+3. The AI should say: "I don't know based on the uploaded documents."
+4. This proves workspace isolation is working — Project Alpha cannot see My Workspace's data even though they share the same vector table.
 
 ## Project Structure
-
 ```
 workspace-assistant/
 ├── backend/
-│   ├── main.py              # FastAPI app, all routes
+│   ├── main.py              # FastAPI app — all routes
 │   ├── database.py          # Connection pool
-│   ├── auth.py              # JWT + password hashing
+│   ├── auth.py              # JWT + bcrypt
 │   ├── embeddings.py        # Sentence-transformers + chunking
-│   ├── discord_notify.py    # Discord webhook helper
-│   ├── schema.sql           # Run this on Neon once
+│   ├── discord_notify.py    # Discord webhook
+│   ├── schema.sql           # Run once on Neon
 │   ├── requirements.txt
 │   ├── Dockerfile
-│   ├── fly.toml
 │   └── .env.example
 └── frontend/
     ├── index.html           # Full single-page app
     └── vercel.json
 ```
-
----
-
-## AI Notes
-
-- Workspace isolation: every vector search query includes `WHERE workspace_id = $1` — no cross-workspace data leakage possible
-- Prompt injection: user text and document text are sanitized with regex before being sent to the LLM
-- Tool calling: single tool `save_task` — Groq detects when user mentions tasks, calls the tool, saves to DB, fires Discord webhook, then generates a natural follow-up response
-- "I don't know": system prompt explicitly instructs the model to say this when context doesn't contain the answer
-- Citations: chunk sources are returned with every response and shown in the UI
