@@ -1,33 +1,36 @@
-# AI_NOTES.md — Design Decisions
+# AI_NOTES.md
 
-## Workspace Isolation
-The `document_chunks` table has a `workspace_id` column directly on it (not inherited via joins).
-Every vector similarity query filters on `workspace_id` *before* ranking by cosine distance.
-This means a user in Workspace A can never receive chunks from Workspace B, even by accident.
+## AI Tools Used
+- **Claude (Anthropic)** — primary tool throughout. Used for architecture decisions, all code generation, debugging, and deployment guidance.
+- **Cursor** — AI-assisted code editor for local development.
 
-## RAG Architecture
-1. User sends a message
-2. Message is embedded using `all-MiniLM-L6-v2` (384 dims, fast, runs locally)
-3. Top 5 semantically similar chunks are retrieved from the user's workspace only
-4. Chunks are injected into the system prompt as numbered sources
-5. LLM generates an answer citing sources, or says "I don't know"
+Work split: Claude generated all code files. I made decisions about which suggestions to use, caught errors, tested everything locally, and handled all deployment steps manually.
 
-## Tool Calling
-Uses Groq's native tool calling API with a single tool: `save_task`.
-The LLM decides when to call it based on conversation context.
-After the tool runs (DB insert + Discord notify), a second LLM call generates the final reply.
+## 3 Key Decisions I Made
 
-## Prompt Injection Resistance
-Both user messages and document text are sanitized with regex before reaching the LLM.
-Patterns like "ignore previous instructions", "act as", "you are now" are stripped.
-The system prompt also explicitly instructs the model to ignore instructions found in document text.
+**1. Single shared vector table with workspace_id column**
+The spec required one shared vector store — not one table per workspace. I enforced isolation by always including `WHERE workspace_id = $1` inside the vector similarity query itself, not as a post-filter. This means the DB engine filters before ranking, so cross-workspace chunks never even appear in results.
 
-## Auth
-Passwords are hashed with bcrypt (salt rounds auto-managed).
-JWTs expire after 24 hours and are signed with a secret key.
-Every protected endpoint validates the token via a FastAPI dependency.
+**2. Hugging Face Spaces for backend hosting**
+Render's free tier (512MB RAM) couldn't handle sentence-transformers (the embedding model loads ~400MB into memory). Hugging Face Spaces CPU Basic tier gives enough headroom for the model to load and serve requests reliably — and already uses Docker, which matched our Dockerfile.
 
-## "I Don't Know" Behaviour
-The system prompt contains an explicit rule:
-> "If the context does NOT contain the answer, say exactly: 'I don't know based on the uploaded documents.'"
-This prevents hallucination when the uploaded docs don't cover the question.
+**3. Two-call tool execution loop**
+When the LLM decides to call a tool, I don't just run it and move on. The flow is: (1) LLM returns tool call, (2) validate tool name and arguments, (3) execute, (4) log to DB, (5) send result back to LLM in a second call so it generates a natural response. This means the LLM always acknowledges what happened rather than leaving the user with a silent action.
+
+## Hardest Bug: Workspace Isolation Appeared Broken
+
+During testing, asking Workspace B about facts that only existed in Workspace A returned correct answers — which should be impossible if isolation was working.
+
+The bug wasn't in the code. The isolation query was correct all along. The actual problem was that I had accidentally uploaded both documents to both workspaces during manual testing (the UI auto-selects the first workspace on login, and I uploaded without checking which workspace was active). The data was wrong, not the code.
+
+I caught it by running a SQL query directly on Neon to check which documents belonged to which workspace, saw duplicates immediately, deleted the wrong ones, and retested. Isolation worked correctly after that.
+
+This was a good reminder: when security-critical behaviour seems broken, check the data before assuming the code is wrong.
+
+## What I'd Improve With More Time
+- Streaming responses token by token (currently waits for full response)
+- Support PDF uploads (currently only .txt, .md, .csv)
+- Hybrid search (keyword + vector) for better retrieval on short queries
+- A retrieval debug view showing exactly which chunks were used per answer
+- Multi-step tool use (model calls tool, sees result, decides to call another)
+- Rate limiting on the API to prevent abuse
