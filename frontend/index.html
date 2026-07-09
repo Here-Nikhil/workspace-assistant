@@ -6,152 +6,100 @@
   <title>Workspace Assistant</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f0f2f5;
-      color: #1a1a1a;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+      background: #f0f2f5; color: #1a1a1a; height: 100vh; display: flex; flex-direction: column;
     }
-
-    /* ── AUTH SCREEN ── */
     #auth-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      display: flex; align-items: center; justify-content: center; height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-
     .auth-card {
-      background: white;
-      border-radius: 16px;
-      padding: 40px;
-      width: 380px;
+      background: white; border-radius: 16px; padding: 40px; width: 380px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     }
-
     .auth-card h1 { font-size: 24px; margin-bottom: 8px; }
     .auth-card p { color: #666; margin-bottom: 28px; font-size: 14px; }
-
     .auth-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
     .auth-tab {
       flex: 1; padding: 8px; border: none; background: #f0f2f5;
       border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
     }
     .auth-tab.active { background: #667eea; color: white; }
-
     input {
       width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0;
-      border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none;
-      transition: border-color 0.2s;
+      border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none; transition: border-color 0.2s;
     }
     input:focus { border-color: #667eea; }
-
     button.primary {
       width: 100%; padding: 12px; background: #667eea; color: white;
-      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s;
     }
     button.primary:hover { background: #5a6fd6; }
     button.primary:disabled { background: #aaa; cursor: not-allowed; }
-
     .error { color: #e53e3e; font-size: 13px; margin-top: 8px; }
-
-    /* ── MAIN APP ── */
     #app-screen { display: none; flex-direction: column; height: 100vh; }
-
-    /* Top bar */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 24px; background: white;
-      border-bottom: 1px solid #e8e8e8;
+      padding: 14px 24px; background: white; border-bottom: 1px solid #e8e8e8;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
     .topbar h2 { font-size: 18px; font-weight: 700; color: #667eea; }
     .topbar .right { display: flex; align-items: center; gap: 12px; }
-    .user-pill {
-      background: #f0f2f5; padding: 6px 14px; border-radius: 20px;
-      font-size: 13px; color: #555;
-    }
+    .user-pill { background: #f0f2f5; padding: 6px 14px; border-radius: 20px; font-size: 13px; color: #555; }
     .btn-sm {
       padding: 6px 14px; border: 1.5px solid #ddd; background: white;
-      border-radius: 8px; cursor: pointer; font-size: 13px;
-      transition: all 0.2s;
+      border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s;
     }
     .btn-sm:hover { border-color: #667eea; color: #667eea; }
-
-    /* Layout */
     .layout { display: flex; flex: 1; overflow: hidden; }
-
-    /* Sidebar */
     .sidebar {
       width: 260px; background: white; border-right: 1px solid #e8e8e8;
-      display: flex; flex-direction: column; padding: 16px;
-      overflow-y: auto;
+      display: flex; flex-direction: column; padding: 16px; overflow-y: auto;
     }
-    .sidebar h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
-      color: #999; margin-bottom: 10px; margin-top: 16px; }
+    .sidebar h3 {
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: #999; margin-bottom: 10px; margin-top: 16px;
+    }
     .sidebar h3:first-child { margin-top: 0; }
-
     .workspace-item {
       padding: 9px 12px; border-radius: 8px; cursor: pointer;
       font-size: 14px; transition: background 0.15s; margin-bottom: 2px;
     }
     .workspace-item:hover { background: #f0f2f5; }
     .workspace-item.active { background: #ede9ff; color: #667eea; font-weight: 600; }
-
-    .new-workspace {
-      display: flex; gap: 6px; margin-top: 8px;
-    }
+    .new-workspace { display: flex; gap: 6px; margin-top: 8px; }
     .new-workspace input { margin-bottom: 0; flex: 1; padding: 8px 10px; font-size: 13px; }
     .new-workspace button {
       padding: 8px 12px; background: #667eea; color: white; border: none;
       border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap;
     }
-
-    /* Tabs */
-    .tabs { display: flex; gap: 4px; padding: 12px 20px 0; background: white;
-      border-bottom: 1px solid #e8e8e8; }
+    .tabs {
+      display: flex; gap: 4px; padding: 12px 20px 0; background: white; border-bottom: 1px solid #e8e8e8;
+    }
     .tab {
       padding: 10px 18px; cursor: pointer; font-size: 14px; font-weight: 500;
       border-bottom: 2px solid transparent; color: #666; transition: all 0.2s;
     }
     .tab.active { color: #667eea; border-bottom-color: #667eea; }
-
-    /* Panels */
     .panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
     .panel.active { display: flex; }
-
-    /* ── CHAT ── */
     .chat-messages {
-      flex: 1; overflow-y: auto; padding: 24px;
-      display: flex; flex-direction: column; gap: 16px;
+      flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
     }
-
     .msg {
-      max-width: 72%; padding: 12px 16px; border-radius: 12px; font-size: 14px;
-      line-height: 1.6;
+      max-width: 72%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6;
     }
-    .msg.user {
-      align-self: flex-end; background: #667eea; color: white;
-      border-bottom-right-radius: 4px;
-    }
+    .msg.user { align-self: flex-end; background: #667eea; color: white; border-bottom-right-radius: 4px; }
     .msg.assistant {
       align-self: flex-start; background: white; border: 1px solid #e8e8e8;
       border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    .msg .citations {
-      margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;
-      font-size: 12px; color: #888;
-    }
+    .msg .citations { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 12px; color: #888; }
     .msg .task-badge {
       margin-top: 8px; background: #e9f5e9; color: #2d7a2d;
       padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-block;
     }
-
     .chat-input-area {
       padding: 16px 20px; background: white; border-top: 1px solid #e8e8e8;
       display: flex; gap: 10px; align-items: flex-end;
@@ -159,29 +107,18 @@
     .chat-input-area textarea {
       flex: 1; resize: none; border: 1.5px solid #e0e0e0; border-radius: 10px;
       padding: 10px 14px; font-size: 14px; font-family: inherit;
-      max-height: 120px; outline: none; transition: border-color 0.2s;
-      margin-bottom: 0;
+      max-height: 120px; outline: none; transition: border-color 0.2s; margin-bottom: 0;
     }
     .chat-input-area textarea:focus { border-color: #667eea; }
     .chat-input-area button {
       padding: 10px 20px; background: #667eea; color: white; border: none;
-      border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600;
-      white-space: nowrap;
+      border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap;
     }
     .chat-input-area button:disabled { background: #aaa; cursor: not-allowed; }
-
-    .no-workspace-msg {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      color: #999; font-size: 15px;
-    }
-
-    /* ── UPLOAD ── */
-    .upload-panel-inner {
-      padding: 32px; max-width: 600px;
-    }
+    .no-workspace-msg { flex: 1; display: flex; align-items: center; justify-content: center; color: #999; font-size: 15px; }
+    .upload-panel-inner { padding: 32px; max-width: 600px; }
     .upload-panel-inner h3 { font-size: 18px; margin-bottom: 8px; }
     .upload-panel-inner p { color: #666; font-size: 14px; margin-bottom: 20px; }
-
     .drop-zone {
       border: 2px dashed #ccc; border-radius: 12px; padding: 40px;
       text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
@@ -189,24 +126,19 @@
     .drop-zone:hover, .drop-zone.dragover { border-color: #667eea; background: #f5f3ff; }
     .drop-zone p { color: #888; font-size: 14px; margin-top: 8px; }
     .drop-zone .icon { font-size: 36px; }
-
     #file-input { display: none; }
     .upload-status { margin-top: 12px; font-size: 14px; }
     .upload-status.success { color: #2d7a2d; }
     .upload-status.error { color: #e53e3e; }
-
     .doc-list { margin-top: 24px; }
     .doc-item {
       display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-      background: white; border: 1px solid #e8e8e8; border-radius: 8px;
-      margin-bottom: 8px; font-size: 14px;
+      background: white; border: 1px solid #e8e8e8; border-radius: 8px; margin-bottom: 8px; font-size: 14px;
     }
     .doc-item .doc-icon { font-size: 20px; }
     .doc-item .doc-name { flex: 1; font-weight: 500; }
     .doc-item .doc-date { color: #999; font-size: 12px; }
-
-    /* ── TASKS ── */
-    .tasks-panel-inner { padding: 32px; max-width: 600px; }
+    .tasks-panel-inner { padding: 32px; max-width: 700px; }
     .tasks-panel-inner h3 { font-size: 18px; margin-bottom: 20px; }
     .task-item {
       background: white; border: 1px solid #e8e8e8; border-radius: 10px;
@@ -216,17 +148,24 @@
     .task-item .task-desc { color: #666; font-size: 13px; margin-top: 4px; }
     .task-item .task-meta { color: #aaa; font-size: 12px; margin-top: 8px; }
     .status-badge {
-      display: inline-block; padding: 2px 8px; border-radius: 20px;
-      font-size: 11px; font-weight: 600; margin-left: 8px;
+      display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 8px;
     }
     .status-badge.open { background: #fff3cd; color: #856404; }
-
+    .status-badge.success { background: #e9f5e9; color: #2d7a2d; }
+    .status-badge.fail { background: #fde8e8; color: #c53030; }
+    .tool-item {
+      background: white; border: 1px solid #e8e8e8; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 10px; font-size: 13px;
+    }
+    .tool-item .tool-name { font-weight: 700; font-size: 14px; color: #667eea; }
+    .tool-item .tool-args { color: #555; margin-top: 4px; font-family: monospace; font-size: 12px; background: #f8f8f8; padding: 6px 8px; border-radius: 6px; }
+    .tool-item .tool-result { color: #444; margin-top: 6px; }
+    .tool-item .tool-meta { color: #aaa; font-size: 12px; margin-top: 8px; }
     .empty-state { color: #aaa; font-size: 14px; padding: 20px 0; }
   </style>
 </head>
 <body>
 
-<!-- ── AUTH SCREEN ── -->
 <div id="auth-screen">
   <div class="auth-card">
     <h1>🗂️ Workspace Assistant</h1>
@@ -242,7 +181,6 @@
   </div>
 </div>
 
-<!-- ── MAIN APP ── -->
 <div id="app-screen">
   <div class="topbar">
     <h2>🗂️ Workspace Assistant</h2>
@@ -253,7 +191,6 @@
   </div>
 
   <div class="layout">
-    <!-- Sidebar -->
     <div class="sidebar">
       <h3>Workspaces</h3>
       <div id="workspace-list"></div>
@@ -264,18 +201,18 @@
       </div>
     </div>
 
-    <!-- Right side -->
     <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
       <div class="tabs">
         <div class="tab active" onclick="switchTab('chat')">💬 Chat</div>
         <div class="tab" onclick="switchTab('upload')">📁 Documents</div>
         <div class="tab" onclick="switchTab('tasks')">✅ Tasks</div>
+        <div class="tab" onclick="switchTab('toollog')">🔧 Tool Log</div>
       </div>
 
       <!-- CHAT PANEL -->
       <div class="panel active" id="panel-chat">
         <div id="no-ws-msg" class="no-workspace-msg">← Select a workspace to start chatting</div>
-        <div id="chat-area" style="display:none; flex:1; overflow:hidden; flex-direction:column; display:none;">
+        <div id="chat-area" style="display:none; flex:1; overflow:hidden; flex-direction:column;">
           <div class="chat-messages" id="chat-messages"></div>
           <div class="chat-input-area">
             <textarea id="chat-input" rows="1" placeholder="Ask a question about your documents..."
@@ -308,27 +245,30 @@
           <div id="tasks-list"><div class="empty-state">Select a workspace to see tasks.</div></div>
         </div>
       </div>
+
+      <!-- TOOL LOG PANEL -->
+      <div class="panel" id="panel-toollog" style="overflow-y:auto;">
+        <div class="tasks-panel-inner">
+          <h3>Tool Call Log</h3>
+          <p style="color:#666; font-size:13px; margin-bottom:20px;">Every time the AI calls a tool, it's logged here with arguments, result, and success/failure.</p>
+          <div id="toollog-list"><div class="empty-state">Select a workspace to see tool calls.</div></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // ── CONFIG ──
-  // Change this to your deployed backend URL after deploying to Fly.io
-  // For local dev, use http://127.0.0.1:8000
   const API = "https://nikhilsri26-docassistant.hf.space";
 
-  // ── STATE ──
   let token = localStorage.getItem("token") || null;
   let userEmail = localStorage.getItem("email") || null;
   let activeWorkspaceId = null;
   let chatHistory = [];
   let authMode = "login";
 
-  // ── INIT ──
   if (token) showApp();
 
-  // ── AUTH ──
   function switchAuthTab(mode) {
     authMode = mode;
     document.querySelectorAll(".auth-tab").forEach((t, i) => {
@@ -344,23 +284,18 @@
     const errEl = document.getElementById("auth-error");
     errEl.textContent = "";
     if (!email || !password) { errEl.textContent = "Please fill in both fields."; return; }
-
     const btn = document.getElementById("auth-btn");
     btn.disabled = true; btn.textContent = "Please wait...";
-
     try {
       const endpoint = authMode === "login" ? "/auth/login" : "/auth/signup";
       const res = await fetch(API + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Something went wrong.");
-      token = data.token;
-      userEmail = data.email;
-      localStorage.setItem("token", token);
-      localStorage.setItem("email", userEmail);
+      token = data.token; userEmail = data.email;
+      localStorage.setItem("token", token); localStorage.setItem("email", userEmail);
       showApp();
     } catch (e) {
       errEl.textContent = e.message;
@@ -384,7 +319,6 @@
     loadWorkspaces();
   }
 
-  // ── WORKSPACES ──
   async function loadWorkspaces() {
     const res = await apiFetch("/workspaces");
     const workspaces = await res.json();
@@ -397,7 +331,6 @@
       el.onclick = () => selectWorkspace(ws.id, ws.name);
       list.appendChild(el);
     });
-    // Auto-select first workspace
     if (!activeWorkspaceId && workspaces.length > 0) {
       selectWorkspace(workspaces[0].id, workspaces[0].name);
     }
@@ -416,8 +349,7 @@
     chatArea.style.flexDirection = "column";
     chatArea.style.flex = "1";
     chatArea.style.overflow = "hidden";
-    loadDocs();
-    loadTasks();
+    loadDocs(); loadTasks();
   }
 
   async function createWorkspace() {
@@ -428,24 +360,20 @@
     loadWorkspaces();
   }
 
-  // ── TABS ──
   function switchTab(tab) {
     document.querySelectorAll(".tab").forEach((t, i) => {
-      t.classList.toggle("active", ["chat","upload","tasks"][i] === tab);
+      t.classList.toggle("active", ["chat","upload","tasks","toollog"][i] === tab);
     });
     document.querySelectorAll(".panel").forEach((p, i) => {
-      p.classList.toggle("active", ["panel-chat","panel-upload","panel-tasks"][i] === "panel-"+tab);
+      p.classList.toggle("active", ["panel-chat","panel-upload","panel-tasks","panel-toollog"][i] === "panel-"+tab);
     });
     if (tab === "upload") loadDocs();
     if (tab === "tasks") loadTasks();
+    if (tab === "toollog") loadToolLog();
   }
 
-  // ── CHAT ──
   function handleChatKey(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
 
   async function sendMessage() {
@@ -453,34 +381,25 @@
     const input = document.getElementById("chat-input");
     const message = input.value.trim();
     if (!message) return;
-
     input.value = "";
     document.getElementById("send-btn").disabled = true;
-
     appendMessage("user", message);
     chatHistory.push({ role: "user", content: message });
-
     const typing = appendMessage("assistant", "Thinking...");
-
     try {
       const res = await apiFetch("/chat", "POST", {
-        workspace_id: activeWorkspaceId,
-        message,
-        history: chatHistory.slice(-6)
+        workspace_id: activeWorkspaceId, message, history: chatHistory.slice(-6)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Error from server.");
-
       typing.remove();
       const msgEl = appendMessage("assistant", data.answer);
-
       if (data.citations && data.citations.length > 0) {
         const citeEl = document.createElement("div");
         citeEl.className = "citations";
         citeEl.textContent = "📎 " + data.citations.join(", ");
         msgEl.appendChild(citeEl);
       }
-
       if (data.task_saved) {
         const badge = document.createElement("div");
         badge.className = "task-badge";
@@ -488,13 +407,11 @@
         msgEl.appendChild(badge);
         loadTasks();
       }
-
       chatHistory.push({ role: "assistant", content: data.answer });
     } catch (e) {
       typing.remove();
       appendMessage("assistant", "⚠️ Error: " + e.message);
     }
-
     document.getElementById("send-btn").disabled = false;
     input.focus();
   }
@@ -509,7 +426,6 @@
     return el;
   }
 
-  // ── UPLOAD ──
   function onDragOver(e) { e.preventDefault(); document.getElementById("drop-zone").classList.add("dragover"); }
   function onDragLeave() { document.getElementById("drop-zone").classList.remove("dragover"); }
   function onDrop(e) {
@@ -524,15 +440,11 @@
     const status = document.getElementById("upload-status");
     status.className = "upload-status";
     status.textContent = `Uploading "${file.name}"...`;
-
     const formData = new FormData();
     formData.append("file", file);
-
     try {
       const res = await fetch(`${API}/workspaces/${activeWorkspaceId}/upload`, {
-        method: "POST",
-        headers: { Authorization: "Bearer " + token },
-        body: formData
+        method: "POST", headers: { Authorization: "Bearer " + token }, body: formData
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
@@ -560,7 +472,6 @@
     `).join("");
   }
 
-  // ── TASKS ──
   async function loadTasks() {
     if (!activeWorkspaceId) return;
     const res = await apiFetch(`/workspaces/${activeWorkspaceId}/tasks`);
@@ -576,14 +487,26 @@
     `).join("");
   }
 
-  // ── API HELPER ──
+  async function loadToolLog() {
+    if (!activeWorkspaceId) return;
+    const res = await apiFetch(`/workspaces/${activeWorkspaceId}/tool-calls`);
+    const logs = await res.json();
+    const list = document.getElementById("toollog-list");
+    if (!logs.length) { list.innerHTML = '<div class="empty-state">No tool calls yet. Ask the AI to save a task or summarize documents.</div>'; return; }
+    list.innerHTML = logs.map(l => `
+      <div class="tool-item">
+        <div class="tool-name">🔧 ${l.tool_name} <span class="status-badge ${l.success ? 'success' : 'fail'}">${l.success ? 'success' : 'failed'}</span></div>
+        <div class="tool-args">${l.arguments || '{}'}</div>
+        <div class="tool-result">${l.result || ''}</div>
+        <div class="tool-meta">${new Date(l.created_at).toLocaleString()}</div>
+      </div>
+    `).join("");
+  }
+
   async function apiFetch(path, method = "GET", body = null) {
     const opts = {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      }
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(API + path, opts);
